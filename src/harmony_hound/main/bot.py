@@ -1,38 +1,51 @@
 import asyncio
+import logging
 
-from src.harmony_hound.adapters.database.connection import connection
-from src.harmony_hound.domain.models.users import Users
-from sqlalchemy import select
+from logging import getLogger
 
-@connection
-async def add_users(session):
-    user = Users(
-        first_name='David',
-        last_name='Smaev',
-        username='SDavid',
-        lang='RU'
-    )
+from src.harmony_hound.presentation.telegram.routers.user import user_router
+from src.harmony_hound.main.config import bot, dp, admins
+from aiogram.types import BotCommand, BotCommandScopeDefault
+from src.harmony_hound.presentation.telegram.routers.start import start_router
 
-    session.add(user)
+logger = getLogger(__name__)
 
-    await session.commit()
+async def set_commands():
+    commands = [BotCommand(command='start', description='Старт')]
+    await bot.set_my_commands(commands, BotCommandScopeDefault())
 
-@connection
-async def get_users(session):
-    records = await session.execute(select(Users))
-    results = records.scalars().unique().all()
+async def start_bot():
+    await set_commands()
 
-    return results
+    try:
+        await bot.send_message(f'I\'m running 🥳')
+    except:
+        pass
 
-async def bot_main():
-    await add_users()
+    logging.info("Bot is running successfully!")
 
-    users : List[Users] = await get_users()
+async def stop_bot():
 
-    print(f"Get all users {users}")
+    await bot.send_message('The bot has been stop! Why?😔')
+
+    await bot.session.close()
+
+    logging.info("The bot has been stop successfully!")
 
 
-if __name__ == '__main__':
-    asyncio.run(bot_main())
+async def main():
+    dp.include_router(start_router)
+    dp.include_router(user_router)
 
+    dp.startup.register(start_bot)
+    dp.shutdown.register(stop_bot)
+
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    finally:
+        await bot.session.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())
 

@@ -1,7 +1,9 @@
-from src.harmony_hound.application.common.settings import settings
+from src.harmony_hound.main.config import load_database_config
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-DATABASE_URL = settings.get_db_url()
+database_config = load_database_config()
+
+DATABASE_URL = database_config.get_db_url()
 
 engine = create_async_engine(url=DATABASE_URL)
 
