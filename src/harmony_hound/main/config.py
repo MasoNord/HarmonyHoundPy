@@ -15,12 +15,19 @@ DB_HOST_ENV = "DB_HOST_ENV"
 DB_NAME_ENV = "DB_NAME_ENV"
 DB_PORT_ENV = "DB_PORT"
 BOT_ADMIN_IDS_ENV = "BOT_ADMIN_IDS"
+RAPID_API_KEY = "RAPID_API_KEY"
+RAPID_API_HOST = "RAPID_API_HOST"
 
 logger = getLogger(__name__)
 load_dotenv()
 
 class ConfigParseError(ValueError):
     pass
+
+@dataclass
+class RapidApiConfig:
+    rapid_api_key: str
+    rapid_api_host: str
 
 @dataclass
 class BotConfig:
@@ -58,6 +65,17 @@ def load_bot_config() -> BotConfig:
     return BotConfig(
         bot_token=bot_token,
         admin_ids=int(admin_ids)
+    )
+
+def load_rapid_api_config() -> RapidApiConfig:
+    logger.info("Reading rapid api config from .env file")
+
+    rapid_api_key = get_str_env(RAPID_API_KEY)
+    rapid_api_host = get_str_env(RAPID_API_HOST)
+
+    return RapidApiConfig(
+        rapid_api_key=rapid_api_key,
+        rapid_api_host=rapid_api_host
     )
 
 def load_database_config() -> DatabaseConfig:

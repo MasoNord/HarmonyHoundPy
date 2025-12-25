@@ -1,9 +1,21 @@
+import os
+import uuid
+from pathlib import Path
+
 from aiogram import Router, F
 from aiogram.types import Message
+from aiogram.filters.command import Command
 
+from harmony_hound.application.common.utils import get_project_root, get_static_root
+from harmony_hound.main.config import bot
 from harmony_hound.presentation.telegram.keyboards.main_keyboards import start_keyboard
+from harmony_hound.presentation.telegram.services.google_drive_service import GoogleDriveService
+from harmony_hound.presentation.telegram.services.recognition_service import RecognitionService
 
 user_router = Router()
+
+SCOPES = ["https://www.googleapis.com/auth/drive.metadata.readonly", "https://www.googleapis.com/auth/drive.file"]
+
 
 @user_router.message(F.text == "ℹ️ Info")
 async def info (
@@ -36,3 +48,51 @@ async def help(
         "wait for a couple of seconds, and enjoy your results!",
         reply_markup=builder.as_markup(resize_keyboard=True)
     )
+
+@user_router.message(F.voice)
+async def audio_processing(message: Message):
+    google_drive_service = GoogleDriveService()
+    recognition_service = RecognitionService()
+
+
+    voice_id = message.voice.file_id
+
+    file = await bot.get_file(voice_id)
+
+    file_path = file.file_path
+
+    file_type = message.voice.mime_type.split("/")[1]
+    file_name = str(uuid.uuid4()) + "." + file_type
+
+    print(f"voice file id {message.voice.file_id}")
+    print(f"file_path: {file_path}")
+    print(f"file_type: {file_type}")
+    print(f"file_name: {file_name}")
+
+    full_file_path = get_static_root() / file_name
+
+    await bot.download_file(file_path, full_file_path)
+
+    file_id = google_drive_service.upload_file(full_file_path)
+
+    web_view_link = google_drive_service.get_web_view_link(file_id)
+
+    google_drive_service.apply_share_flag(file_id)
+
+    # --- Recognise song by web_view_link ---
+    result = recognition_service.recognise_song(web_view_link)
+
+    google_drive_service.delete_file_by_id(file_id)
+
+    os.remove(full_file_path)
+
+    print(str(result))
+
+    return await message.answer("Success!")
+
+@user_router.message(F.video_note)
+async def video_processing(message: Message):
+    print(f"Video Note file ID{message.video_note.file_id}")
+
+
+    return await message.answer("Hello from the video processing route!")
