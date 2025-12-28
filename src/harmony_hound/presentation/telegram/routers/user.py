@@ -54,7 +54,6 @@ async def audio_processing(message: Message):
     google_drive_service = GoogleDriveService()
     recognition_service = RecognitionService()
 
-
     voice_id = message.voice.file_id
 
     file = await bot.get_file(voice_id)
@@ -92,7 +91,37 @@ async def audio_processing(message: Message):
 
 @user_router.message(F.video_note)
 async def video_processing(message: Message):
-    print(f"Video Note file ID{message.video_note.file_id}")
+    google_drive_service = GoogleDriveService()
+    recognition_service = RecognitionService()
 
+    video_id = message.video_note.file_id
 
-    return await message.answer("Hello from the video processing route!")
+    print(f"Video Note file ID{video_id}")
+
+    file = await bot.get_file(video_id)
+
+    file_path = file.file_path
+
+    file_type = "mp4"
+    file_name = str(uuid.uuid4()) + "." + file_type
+
+    full_file_path = get_static_root() / file_name
+
+    await bot.download_file(file_path, full_file_path)
+
+    file_id = google_drive_service.upload_file(full_file_path)
+
+    web_view_link = google_drive_service.get_web_view_link(file_id)
+
+    google_drive_service.apply_share_flag(file_id)
+
+    # --- Recognise song by web_view_link ---
+    result = recognition_service.recognise_song(web_view_link)
+
+    google_drive_service.delete_file_by_id(file_id)
+
+    os.remove(full_file_path)
+
+    print(str(result))
+
+    return await message.answer("Success!")

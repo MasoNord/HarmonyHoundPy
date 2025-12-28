@@ -12,7 +12,10 @@ from googleapiclient.http import MediaFileUpload, HttpError
 from harmony_hound.application.common.utils import get_project_root
 
 ROOT_DIR = get_project_root()
-SCOPES = ["https://www.googleapis.com/auth/drive.metadata.readonly", "https://www.googleapis.com/auth/drive.file"]
+SCOPES = [
+    "https://www.googleapis.com/auth/drive.metadata.readonly",
+    "https://www.googleapis.com/auth/drive.file"
+]
 
 class GoogleDriveService:
     def __init__(self):

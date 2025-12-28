@@ -19,5 +19,4 @@ def connection(method):
                 raise e
             finally:
                 await session.close()
-
     return wrapper
